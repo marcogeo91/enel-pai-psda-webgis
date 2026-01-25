@@ -1,0 +1,19 @@
+# === GIS / DB ===
+*.dump
+*.sql
+*.gpkg
+*.zip
+
+/data/
+/backups/
+/db_dumps/
+
+# === Python / temp ===
+__pycache__/
+*.pyc
+*.log
+*.tmp
+
+# === OS ===
+.DS_Store
+Thumbs.db

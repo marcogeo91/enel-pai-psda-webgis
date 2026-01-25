@@ -1,0 +1,54 @@
+Volturno:
+  table: pai_volturno
+  idrogeologico:
+    PF3:
+      template: templates/volturno_idro_PF3.docx
+      normativa: PAI Volturno 2006
+  idraulico:
+    B1:
+      template: templates/volturno_idraulico_B1.docx
+      normativa: PAI Volturno 2006
+
+Biferno:
+  table: pai_biferno
+  idrogeologico:
+    PF2:
+      template: templates/biferno_idro_PF2.docx
+      normativa: PAI Biferno 2017
+  idraulico:
+    Pi2:
+      template: templates/biferno_idraulico_Pi2.docx
+      normativa: PAI Biferno 2017
+      
+Fortore:
+  table: pai_fortore
+  idrogeologico:
+    PF2:
+      template: templates/fortore_idro_PF2.docx
+      normativa: PAI Biferno 2017
+  idraulico:
+    Pi2:
+      template: templates/fortore_idraulico_Pi2.docx
+      normativa: PAI Biferno 2017 
+      
+Saccione:
+  table: pai_saccione
+  idrogeologico:
+    PF2:
+      template: templates/saccione_idro_PF2.docx
+      normativa: PAI Biferno 2017
+  idraulico:
+    Pi2:
+      template: templates/saccione_idraulico_Pi2.docx
+      normativa: PAI Biferno 2017
+      
+Trigno:
+  table: pai_trigno
+  idrogeologico:
+    PF2:
+      template: templates/trigno_idro_PF2.docx
+      normativa: PAI Biferno 2017
+  idraulico:
+    Pi2:
+      template: templates/trigno_idraulico_Pi2.docx
+      normativa: PAI Biferno 2017

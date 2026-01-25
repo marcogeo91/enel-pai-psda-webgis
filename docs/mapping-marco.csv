@@ -1,0 +1,96 @@
+table_name;column_name;raw_value;mapping
+pai_biferno__pericolosita_frana;hazard_pai;PF1;PF1
+pai_biferno__pericolosita_frana;hazard_pai;PF2;PF2
+pai_biferno__pericolosita_frana;hazard_pai;PF3;PF3
+pai_biferno__pericolosita_idraulica;peric_idr;P1;PI1
+pai_biferno__pericolosita_idraulica;peric_idr;P2;PI2
+pai_biferno__pericolosita_idraulica;peric_idr;P3;PI3
+pai_biferno__rischio_frana;rischio;R0;RF0
+pai_biferno__rischio_frana;rischio;R1;RF1
+pai_biferno__rischio_frana;rischio;R2;RF2
+pai_biferno__rischio_frana;rischio;R3;RF3
+pai_biferno__rischio_frana;rischio;R4;RF4
+pai_biferno__rischio_idraulico;rischio;R1;RI1
+pai_biferno__rischio_idraulico;rischio;R2;RI2
+pai_biferno__rischio_idraulico;rischio;R3;RI3
+pai_biferno__rischio_idraulico;rischio;R4;RI4
+pai_fortore__pericolosita_frana;hazard_pai;Pf1;PF1
+pai_fortore__pericolosita_frana;hazard_pai;Pf2;PF2
+pai_fortore__pericolosita_frana;hazard_pai;Pf3;PF3
+pai_fortore__pericolosita_idraulica;peric_sint;PI1;PI1
+pai_fortore__pericolosita_idraulica;peric_sint;PI2;PI2
+pai_fortore__pericolosita_idraulica;peric_sint;PI3;PI3
+pai_fortore__rischio_frana;rischio;R0;RF0
+pai_fortore__rischio_frana;rischio;R1;RF1
+pai_fortore__rischio_frana;rischio;R2;RF2
+pai_fortore__rischio_frana;rischio;R3;RF3
+pai_fortore__rischio_frana;rischio;R4;RF4
+pai_fortore__rischio_idraulico;rischio;RI1;RI1
+pai_fortore__rischio_idraulico;rischio;RI2;RI2
+pai_fortore__rischio_idraulico;rischio;RI3;RI3
+pai_fortore__rischio_idraulico;rischio;RI4;RI4
+pai_saccione__pericolosita_frana;hazard_pai;Pf1;PF1
+pai_saccione__pericolosita_frana;hazard_pai;Pf2;PF2
+pai_saccione__pericolosita_frana;hazard_pai;Pf3;PF3
+pai_saccione__pericolosita_idraulica;peric_idr;I_P1;PI1
+pai_saccione__pericolosita_idraulica;peric_idr;I_P2;PI2
+pai_saccione__pericolosita_idraulica;peric_idr;I_P3;PI3
+pai_saccione__rischio_frana;rischio;R0;RF0
+pai_saccione__rischio_frana;rischio;R1;RF1
+pai_saccione__rischio_frana;rischio;R2;RF2
+pai_saccione__rischio_frana;rischio;R3;RF3
+pai_saccione__rischio_frana;rischio;R4;RF4
+pai_saccione__rischio_idraulico;rischio;R1;RI1
+pai_saccione__rischio_idraulico;rischio;R2;RI2
+pai_saccione__rischio_idraulico;rischio;R3;RI3
+pai_saccione__rischio_idraulico;rischio;R4;RI3
+pai_trigno__pericolosita_frana;hazard_pai;PF1;PF1
+pai_trigno__pericolosita_frana;hazard_pai;PF2;PF2
+pai_trigno__pericolosita_frana;hazard_pai;PF3;PF3
+pai_trigno__pericolosita_idraulica;peric_idr;I_P1;PI1
+pai_trigno__pericolosita_idraulica;peric_idr;I_P2;PI2
+pai_trigno__pericolosita_idraulica;peric_idr;I_P3;PI3
+pai_trigno__rischio_frana;rischio;R0;RF0
+pai_trigno__rischio_frana;rischio;R1;RF1
+pai_trigno__rischio_frana;rischio;R2;RF2
+pai_trigno__rischio_frana;rischio;R3;RF3
+pai_trigno__rischio_frana;rischio;R4;RF4
+pai_trigno__rischio_idraulico;rischio;R1;RI1
+pai_trigno__rischio_idraulico;rischio;R2;RI2
+pai_trigno__rischio_idraulico;rischio;R3;RI3
+pai_trigno__rischio_idraulico;rischio;R4;RI4
+pai_volturno__psairf_ambitirisk;rischio;C1;C1
+pai_volturno__psairf_rischio;rischio;Area di moderata attenzione A1;A1
+pai_volturno__psairf_rischio;rischio;Area di media attenzione A2;A2
+pai_volturno__psairf_rischio;rischio;Area di medio-alta attenzione A3;A3
+pai_volturno__psairf_rischio;rischio;Area di alta attenzione A4;A4
+pai_volturno__psairf_rischio;hazard;al;AL
+pai_volturno__psairf_rischio;rischio;al;AL
+pai_volturno__psairf_rischio;hazard;AMAS;AMAS
+pai_volturno__psairf_rischio;rischio;AMAS;AMAS
+pai_volturno__psairf_rischio;rischio;Apa;APA
+pai_volturno__psairf_rischio;rischio;Apb;APB
+pai_volturno__psairf_rischio;hazard;P1;P1
+pai_volturno__psairf_rischio;hazard;P2;P2
+pai_volturno__psairf_rischio;hazard;P3;P3
+pai_volturno__psairf_rischio;hazard;P4;P4
+pai_volturno__psairf_rischio;rischio;R1;R1
+pai_volturno__psairf_rischio;rischio;R1 parco;R1-PARCO
+pai_volturno__psairf_rischio;rischio;R2;R2
+pai_volturno__psairf_rischio;rischio;R2 parco;R2-PARCO
+pai_volturno__psairf_rischio;rischio;R3;R3
+pai_volturno__psairf_rischio;rischio;R3 parco;R3-PARCO
+pai_volturno__psairf_rischio;rischio;R4;R4
+pai_volturno__psairf_rischio;rischio;R4 parco;R4-PARCO
+pai_volturno__psairf_rischio;rischio;Rpa;RPA
+pai_volturno__psairf_rischio;rischio;Rpa parco;RPA-PARCO
+pai_volturno__psairf_rischio;rischio;Rpb;RPB
+pai_volturno__psairf_rischio;rischio;Rpb parco;RPB-PARCO
+pai_volturno__psda_p_2023b;peric;A;A
+pai_volturno__psda_p_2023b;peric;AREA_RETROARG;AREA_RETROARG
+pai_volturno__psda_p_2023b;peric;B1;B1
+pai_volturno__psda_p_2023b;peric;B2;B2
+pai_volturno__psda_p_2023b;peric;B3;B3
+pai_volturno__psda_p_2023b;peric;C;C1
+pai_volturno__psda_p_2023b;peric;INVASO;INVASO
+pai_volturno__psda_p_2023b;peric;LITORALE;LIT

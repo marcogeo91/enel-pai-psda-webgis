@@ -1,0 +1,40 @@
+datasets:
+  - bacino: Biferno
+    table: pai_biferno
+  - bacino: Volturno
+    table: pai_volturno
+
+rank:
+  biferno:
+    idrogeologico: [PF1, PF2, PF3, PF4]
+    idraulico: [Pi1, Pi2, Pi3]
+  volturno:
+    idrogeologico: [PF1, PF2, PF3, PF4]
+    idraulico: [A, B, C, B1, B2, B3, "A - B - C"]
+
+templates:
+  biferno:
+    idrogeologico:
+      PF1: templates/idrogeologico/biferno/PF1.docx
+      PF2: templates/idrogeologico/biferno/PF2.docx
+      PF3: templates/idrogeologico/biferno/PF3.docx
+      PF4: templates/idrogeologico/biferno/PF4.docx
+    idraulico:
+      Pi1: templates/idraulico/biferno/Pi1.docx
+      Pi2: templates/idraulico/biferno/Pi2.docx
+      Pi3: templates/idraulico/biferno/Pi3.docx
+
+  volturno:
+    idrogeologico:
+      PF1: templates/idrogeologico/volturno/PF1.docx
+      PF2: templates/idrogeologico/volturno/PF2.docx
+      PF3: templates/idrogeologico/volturno/PF3.docx
+      PF4: templates/idrogeologico/volturno/PF4.docx
+    idraulico:
+      "A - B - C": templates/idraulico/volturno/ABC.docx
+      A: templates/idraulico/volturno/A.docx
+      B: templates/idraulico/volturno/B.docx
+      C: templates/idraulico/volturno/C.docx
+      B1: templates/idraulico/volturno/B1.docx
+      B2: templates/idraulico/volturno/B2.docx
+      B3: templates/idraulico/volturno/B3.docx

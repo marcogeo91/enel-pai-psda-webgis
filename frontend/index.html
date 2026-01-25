@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ENEL PAI/PSDA</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { height: 100%; width: 100%; }
+
+    .panel {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      width: 420px;
+      max-width: calc(100% - 32px);
+      background: rgba(255,255,255,.95);
+      border-radius: 14px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.15);
+      padding: 14px 14px 12px 14px;
+      z-index: 1000;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    .panel h3 { margin: 0 0 10px 0; font-size: 18px; }
+    .row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .row > * { flex: 1; }
+    input, select, textarea, button {
+      font: inherit;
+      border: 1px solid #d7d7d7;
+      border-radius: 10px;
+      padding: 9px 10px;
+      background: #fff;
+      box-sizing: border-box;
+    }
+    textarea { width: 100%; height: 220px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; }
+    button { cursor: pointer; }
+    .btn-primary { background: #111; color: #fff; border-color: #111; }
+    .btn-ghost { background: #f6f6f6; }
+    .btn-danger { background: #c0392b; color: #fff; border-color: #c0392b; }
+    .hint { font-size: 12px; color: #555; margin: 0 0 10px 0; }
+    .ok { color: #1b7f2a; font-weight: 600; font-size: 12px; margin: 6px 0; }
+    .err { color: #b00020; font-weight: 600; font-size: 12px; margin: 6px 0; }
+
+    /* modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.25);
+      display: none;
+      z-index: 2000;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 30px 16px;
+    }
+    .modal {
+      width: 880px;
+      max-width: 100%;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      overflow: hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-bottom: 1px solid #eee;
+      background: #fafafa;
+    }
+    .modal-body { padding: 12px 14px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid #eee; text-align: left; font-size: 13px; }
+    tr:hover { background: #f7f7f7; }
+    .pill { display: inline-block; padding: 3px 8px; border-radius: 999px; background: #f2f2f2; font-size: 12px; }
+    .small { font-size: 12px; color: #555; }
+    .actions { white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <div class="panel">
+    <h3>ENEL PAI/PSDA</h3>
+
+    <div class="row">
+      <input id="projectId" placeholder="Numero progetto (es. 60705793)" />
+      <button id="btnProjects" class="btn-ghost" style="flex:0 0 110px;">Progetti</button>
+    </div>
+    <div class="row">
+      <input id="projectDesc" placeholder="Descrizione (testo libero)" />
+      <button id="btnSave" class="btn-ghost" style="flex:0 0 110px;">Salva</button>
+    </div>
+
+    <div class="row">
+      <button id="btnAnalyze" class="btn-primary">Analizza</button>
+      <button id="btnShowIntersections" class="btn-ghost">Mostra intersezioni</button>
+      <button id="btnHideIntersections" class="btn-ghost" style="flex:0 0 90px;">Nascondi</button>
+    </div>
+
+    <div class="hint">
+      Analizza: intersezione su geometria disegnata. <br/>
+      Preview: carica geometrie dal DB per verificare dove stanno (usa bbox della mappa).
+    </div>
+
+    <div class="row">
+      <select id="tableSelect">
+        <option value="">-- scegli tabella --</option>
+      </select>
+      <input id="limitInput" type="number" value="200" min="1" max="20000" style="flex:0 0 90px;" />
+      <button id="btnPreview" class="btn-ghost" style="flex:0 0 120px;">Carica (sample)</button>
+    </div>
+
+    <div class="row">
+      <button id="btnLoadAll" class="btn-ghost">Carica TUTTE (vista)</button>
+      <button id="btnClearDraw" class="btn-ghost">Pulisci disegno</button>
+      <button id="btnClearOverlay" class="btn-ghost" style="flex:0 0 130px;">Pulisci overlay</button>
+    </div>
+
+    <div class="row">
+      <button id="btnShowExtents" class="btn-ghost">Mostra extents</button>
+      <button id="btnHideExtents" class="btn-ghost">Nascondi extents</button>
+    </div>
+
+    <div id="status" class="small"></div>
+    <div id="ok" class="ok" style="display:none;"></div>
+    <div id="err" class="err" style="display:none;"></div>
+    <textarea id="out" placeholder="Risposta backend..."></textarea>
+  </div>
+
+  <!-- Modal Progetti -->
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div style="font-weight:700;">Geometrie salvate</div>
+          <div class="small">Apri per caricare, Elimina per rimuovere dal DB.</div>
+        </div>
+        <button id="btnCloseModal" class="btn-ghost" style="flex:0 0 90px;">Chiudi</button>
+      </div>
+      <div class="modal-body">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:140px;">Project ID</th>
+              <th>Descrizione</th>
+              <th style="width:170px;">Ultimo update</th>
+              <th class="actions" style="width:130px;">Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="projectsTbody">
+            <tr><td colspan="4" class="small">Caricamento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+  <script>
+    const API_BASE = "/api"; // nginx proxy
+
+    const map = L.map("map", { zoomControl: true }).setView([41.6, 14.6], 8);
+
+    // Basemaps (Google: vedi nota sotto)
+    const baseOSM = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(map);
+    const baseEsri = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Tiles © Esri" });
+    const baseCarto = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", { maxZoom: 19, attribution: "© OpenStreetMap, © CARTO" });
+
+L.control.layers(
+  { "OSM": baseOSM, "ESRI Satellite": baseEsri, "Carto Light": baseCarto },
+  null,
+  { position: "bottomleft", collapsed: true }
+).addTo(map);
+
+
+    const drawn = new L.FeatureGroup().addTo(map);
+    const overlay = new L.FeatureGroup().addTo(map);
+    const extentsLayer = new L.FeatureGroup().addTo(map);
+
+    const drawControl = new L.Control.Draw({
+      draw: { polyline: true, polygon: true, rectangle: true, circle: false, marker: true, circlemarker: false },
+      edit: { featureGroup: drawn }
+    });
+    map.addControl(drawControl);
+
+    map.on(L.Draw.Event.CREATED, (e) => drawn.addLayer(e.layer));
+
+    function setMsg(kind, msg) {
+      const ok = document.getElementById("ok");
+      const err = document.getElementById("err");
+      ok.style.display = "none"; err.style.display = "none";
+      if (kind === "ok") { ok.textContent = msg; ok.style.display = "block"; }
+      if (kind === "err") { err.textContent = msg; err.style.display = "block"; }
+      document.getElementById("status").textContent = kind === "status" ? msg : "";
+    }
+
+    function currentGeometryGeoJSON() {
+      const fc = drawn.toGeoJSON();
+      if (!fc?.features?.length) return null;
+      if (fc.features.length === 1) return fc.features[0].geometry;
+      return fc; // FeatureCollection
+    }
+
+    async function apiGet(path) {
+      const r = await fetch(API_BASE + path, { headers: { "Accept": "application/json" } });
+      const txt = await r.text();
+      let j = null;
+      try { j = JSON.parse(txt); } catch(e) {}
+      if (!r.ok) throw new Error(j?.error || txt || ("HTTP " + r.status));
+      return j ?? { ok: false, raw: txt };
+    }
+
+    async function apiSend(path, method, body) {
+      const r = await fetch(API_BASE + path, {
+        method,
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const txt = await r.text();
+      let j = null;
+      try { j = JSON.parse(txt); } catch(e) {}
+      if (!r.ok) throw new Error(j?.error || txt || ("HTTP " + r.status));
+      return j ?? { ok: false, raw: txt };
+    }
+
+    function renderJSON(j) {
+      document.getElementById("out").value = JSON.stringify(j, null, 2);
+    }
+
+    async function refreshTables() {
+      try {
+        const j = await apiGet("/tables");
+        const sel = document.getElementById("tableSelect");
+        sel.innerHTML = '<option value="">-- scegli tabella --</option>';
+        (j.tables || []).forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = t.table;
+          opt.textContent = `${t.table} (SRID ${t.srid})`;
+          sel.appendChild(opt);
+        });
+      } catch(e) {
+        setMsg("err", "Errore /tables: " + e.message);
+      }
+    }
+
+    async function showExtents() {
+      extentsLayer.clearLayers();
+      try {
+        const j = await apiGet("/extents");
+        (j.extents || []).forEach(ex => {
+          const b = ex.bbox4326; // [minx,miny,maxx,maxy]
+          const rect = L.rectangle([[b[1], b[0]], [b[3], b[2]]], { weight: 1, fillOpacity: 0.05 });
+          rect.bindPopup(`<b>${ex.table}</b><br/><span class="pill">SRID ${ex.srid}</span>`);
+          extentsLayer.addLayer(rect);
+        });
+        setMsg("ok", `Extents: ${j.extents?.length || 0}`);
+      } catch(e) {
+        setMsg("err", "Errore extents: " + e.message);
+      }
+    }
+
+async function previewSample() {
+  overlay.clearLayers();
+  const table = document.getElementById("tableSelect").value;
+  const limit = parseInt(document.getElementById("limitInput").value || "200", 10);
+  if (!table) return setMsg("err", "Seleziona una tabella");
+
+  setMsg("status", "Carico sample...");
+  try {
+    const j = await apiGet(
+      `/features?table=${encodeURIComponent(table)}&limit=${limit}&offset=0`
+    );
+    renderJSON(j);
+
+    if (j.fc && j.fc.features.length) {
+      const gj = L.geoJSON(j.fc, { style: () => ({ weight: 1, fillOpacity: 0.2 }) });
+      overlay.addLayer(gj);
+      map.fitBounds(gj.getBounds(), { padding: [20,20] });
+      setMsg("ok", `Sample: ${j.count}`);
+    } else {
+      setMsg("ok", "Nessuna geometria");
+    }
+  } catch (e) {
+    setMsg("err", "Errore preview: " + e.message);
+  }
+}
+
+
+async function loadAllInView() {
+  overlay.clearLayers();
+  const table = document.getElementById("tableSelect").value;
+  if (!table) return setMsg("err", "Seleziona una tabella");
+
+  const b = map.getBounds();
+  const bbox = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(",");
+  const pageSize = 3000;
+
+  setMsg("status", "Carico geometrie (vista)...");
+  let offset = 0, total = 0;
+
+  try {
+    while (true) {
+      const j = await apiGet(
+        `/features?table=${encodeURIComponent(table)}&limit=${pageSize}&offset=${offset}&bbox=${bbox}`
+      );
+
+      if (!j.fc || !j.fc.features.length) break;
+
+      overlay.addLayer(
+        L.geoJSON(j.fc, { style: () => ({ weight: 1, fillOpacity: 0.15 }) })
+      );
+
+      total += j.fc.features.length;
+      offset += j.fc.features.length;
+
+      if (j.fc.features.length < pageSize) break;
+      if (total > 60000) {
+        setMsg("err", "Troppe geometrie. Zoom-in e riprova.");
+        break;
+      }
+    }
+    setMsg("ok", `Caricate ${total} geometrie`);
+  } catch (e) {
+    setMsg("err", "Errore load all: " + e.message);
+  }
+}
+
+
+    async function analyze() {
+      overlay.clearLayers();
+      const geometry = currentGeometryGeoJSON();
+      if (!geometry) return setMsg("err", "Disegna una geometria prima di analizzare");
+
+      setMsg("status", "Analizzo...");
+      const payload = {
+        project: document.getElementById("projectId").value.trim() || null,
+        geometry,
+        include_overlay: true,
+        overlay_limit: 4000
+      };
+
+      try {
+        const j = await apiSend("/analyze", "POST", payload);
+        renderJSON(j);
+
+        if (j.features?.type === "FeatureCollection" && (j.features.features || []).length) {
+          overlay.addLayer(L.geoJSON(j.features, { style: () => ({ weight: 2, fillOpacity: 0.15 }) }));
+        }
+        setMsg("ok", `OK: hits ${(j.hits||[]).length}, overlay ${(j.features?.features||[]).length}`);
+      } catch(e) {
+        setMsg("err", "Errore analyze: " + e.message);
+      }
+    }
+
+async function showIntersections() {
+  overlay.clearLayers();
+  const geometry = currentGeometryGeoJSON();
+  if (!geometry) return setMsg("err", "Disegna una geometria prima");
+
+  setMsg("status", "Carico geometrie intersecate...");
+  try {
+    const j = await apiSend("/intersections", "POST", {
+      geometry,
+      limit: 5000
+    });
+
+    renderJSON(j);
+
+    if (j.fc && j.fc.features && j.fc.features.length) {
+      overlay.addLayer(
+        L.geoJSON(j.fc, {
+          style: () => ({ weight: 2, color: "#0066cc", fillOpacity: 0.2 })
+        })
+      );
+      setMsg("ok", `Intersezioni: ${j.count}`);
+    } else {
+      setMsg("ok", "Nessuna geometria intersecata");
+    }
+  } catch (e) {
+    setMsg("err", "Errore intersezioni: " + e.message);
+  }
+}
+
+
+
+    // Projects modal
+    function openModal() { document.getElementById("modalBackdrop").style.display = "flex"; }
+    function closeModal() { document.getElementById("modalBackdrop").style.display = "none"; }
+
+    async function refreshProjects() {
+      const tb = document.getElementById("projectsTbody");
+      tb.innerHTML = '<tr><td colspan="4" class="small">Caricamento...</td></tr>';
+
+      try {
+        const j = await apiGet("/projects");
+        const rows = j.projects || [];
+        if (!rows.length) {
+          tb.innerHTML = '<tr><td colspan="4" class="small">Nessun progetto salvato.</td></tr>';
+          return;
+        }
+        tb.innerHTML = "";
+        for (const p of rows) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><span class="pill">${p.project_id}</span></td>
+            <td>${(p.description || "").replace(/</g,"&lt;")}</td>
+            <td>${new Date(p.updated_at).toLocaleString()}</td>
+            <td class="actions">
+              <button data-act="load" data-id="${p.project_id}" class="btn-ghost" style="padding:6px 10px;">Apri</button>
+              <button data-act="del" data-id="${p.project_id}" class="btn-danger" style="padding:6px 10px;">Elimina</button>
+            </td>`;
+          tb.appendChild(tr);
+        }
+
+        tb.querySelectorAll("button").forEach(btn => {
+          btn.addEventListener("click", async (ev) => {
+            ev.stopPropagation();
+            const id = btn.getAttribute("data-id");
+            const act = btn.getAttribute("data-act");
+            if (act === "load") {
+              await loadProject(id);
+              closeModal();
+            } else if (act === "del") {
+              if (!confirm("Eliminare il progetto " + id + "?")) return;
+              await apiSend(`/projects/${encodeURIComponent(id)}`, "DELETE");
+              await refreshProjects();
+              setMsg("ok", "Eliminato " + id);
+            }
+          });
+        });
+      } catch(e) {
+        tb.innerHTML = `<tr><td colspan="4" class="err">${e.message}</td></tr>`;
+      }
+    }
+
+    async function loadProject(projectId) {
+      setMsg("status", "Carico progetto " + projectId + "...");
+      const j = await apiGet(`/projects/${encodeURIComponent(projectId)}`);
+      document.getElementById("projectId").value = j.project_id;
+      document.getElementById("projectDesc").value = j.description || "";
+
+      drawn.clearLayers();
+      const gj = L.geoJSON({ type:"Feature", geometry:j.geometry, properties:{} }, { style: () => ({ weight: 2 }) });
+      gj.eachLayer(l => drawn.addLayer(l));
+      map.fitBounds(gj.getBounds(), { padding: [20,20] });
+      setMsg("ok", "Progetto caricato");
+    }
+
+    async function saveProject() {
+      const project_id = document.getElementById("projectId").value.trim();
+      const description = document.getElementById("projectDesc").value.trim();
+      const geometry = currentGeometryGeoJSON();
+      if (!project_id) return setMsg("err", "Inserisci Project ID");
+      if (!geometry) return setMsg("err", "Disegna una geometria da salvare");
+
+      setMsg("status", "Salvo progetto...");
+      try {
+        const j = await apiSend("/projects", "POST", { project_id, description, geometry });
+        setMsg("ok", "Salvato " + j.project_id);
+      } catch(e) {
+        setMsg("err", "Errore salvataggio: " + e.message);
+      }
+    }
+
+    document.getElementById("btnAnalyze").addEventListener("click", analyze);
+    document.getElementById("btnPreview").addEventListener("click", previewSample);
+    document.getElementById("btnLoadAll").addEventListener("click", loadAllInView);
+
+    document.getElementById("btnClearDraw").addEventListener("click", () => drawn.clearLayers());
+    document.getElementById("btnClearOverlay").addEventListener("click", () => overlay.clearLayers());
+
+    document.getElementById("btnShowExtents").addEventListener("click", showExtents);
+    document.getElementById("btnHideExtents").addEventListener("click", () => extentsLayer.clearLayers());
+
+    document.getElementById("btnProjects").addEventListener("click", async () => { openModal(); await refreshProjects(); });
+    document.getElementById("btnCloseModal").addEventListener("click", closeModal);
+    document.getElementById("modalBackdrop").addEventListener("click", (e) => { if (e.target?.id === "modalBackdrop") closeModal(); });
+    document.getElementById("btnSave").addEventListener("click", saveProject);
+
+    document.getElementById("btnShowIntersections")
+  .addEventListener("click", showIntersections);
+
+    document.getElementById("btnHideIntersections").addEventListener("click", () => overlay.eachLayer(l => l.setStyle ? l.setStyle({ opacity: 0, fillOpacity: 0 }) : null));
+
+const SearchControl = L.Control.extend({
+  options: { position: 'bottomleft' },
+  onAdd: function () {
+    const div = L.DomUtil.create('div', 'leaflet-bar');
+    div.style.background = 'white';
+    div.style.padding = '6px';
+    div.style.minWidth = '260px';
+
+    div.innerHTML = `
+      <input id="searchBox" placeholder="Indirizzo o lat,lon"
+        style="width:100%; padding:6px; border:1px solid #ccc; border-radius:6px;">
+    `;
+
+    L.DomEvent.disableClickPropagation(div);
+
+    const box = div.querySelector('#searchBox');
+    box.addEventListener("keydown", async (e) => {
+      if (e.key !== "Enter") return;
+      const q = box.value.trim();
+      if (!q) return;
+
+      // coordinate
+      const m = q.match(/(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)/);
+      if (m) {
+        const lat = parseFloat(m[1]);
+        const lon = parseFloat(m[3]);
+        map.setView([lat, lon], 15);
+        return;
+      }
+
+      // indirizzo
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`;
+      const r = await fetch(url);
+      const res = await r.json();
+      if (res?.length) {
+        map.setView([+res[0].lat, +res[0].lon], 16);
+      }
+    });
+
+    return div;
+  }
+});
+map.addControl(new SearchControl());
+
+
+
+    refreshTables();
+
+    // Nota Google:
+    // Evito URL tile "google.com/vt" (ToS). Se vuoi Google basemap, vedi istruzioni.
+  </script>
+</body>
+</html>
