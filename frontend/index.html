@@ -127,6 +127,10 @@
       <button id="btnHideExtents" class="btn-ghost">Nascondi extents</button>
     </div>
 
+<div class="row">
+  <label style="font-size:12px;">Trasparenza Catasto</label>
+  <input id="catastoOpacity" type="range" min="0" max="1" step="0.05" value="0.6">
+</div>
     <div id="status" class="small"></div>
     <div id="ok" class="ok" style="display:none;"></div>
     <div id="err" class="err" style="display:none;"></div>
@@ -168,18 +172,88 @@
     const API_BASE = "/api"; // nginx proxy
 
     const map = L.map("map", { zoomControl: true }).setView([41.6, 14.6], 8);
+	
+// Pane dedicato al Catasto (sopra le basemap)
+map.createPane("catastoPane");
+map.getPane("catastoPane").style.zIndex = 450;
+map.getPane("catastoPane").style.pointerEvents = "none";
+
+	const ZoomIndicator = L.Control.extend({
+  options: { position: "topleft" },
+  onAdd: function () {
+    const div = L.DomUtil.create("div", "leaflet-bar");
+    div.style.background = "white";
+    div.style.padding = "4px 8px";
+    div.style.fontSize = "12px";
+    div.style.fontWeight = "600";
+    div.innerText = "Zoom: " + map.getZoom();
+
+    map.on("zoomend", () => {
+      div.innerText = "Zoom: " + map.getZoom();
+    });
+
+    return div;
+  }
+});
+map.addControl(new ZoomIndicator());
+
+
+    let searchMarker = null;
 
     // Basemaps (Google: vedi nota sotto)
+	// === WMS Catasto (consultazione, NON valore legale) ===
+
     const baseOSM = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(map);
+	// === GOOGLE ===
+const googleSatellite = L.tileLayer(
+  "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+  {
+    maxZoom: 20,
+    subdomains: ["mt0", "mt1", "mt2", "mt3"]
+  }
+);
+
+const googleHybrid = L.tileLayer(
+  "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+  {
+    maxZoom: 20,
+    subdomains: ["mt0", "mt1", "mt2", "mt3"]
+  }
+);
     const baseEsri = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Tiles © Esri" });
     const baseCarto = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", { maxZoom: 19, attribution: "© OpenStreetMap, © CARTO" });
 
+// =====================
+// CATASTO - WMS TILED (PARTICELLE)
+// =====================
+const catasto = L.tileLayer.wms(
+  "https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php",
+  {
+    layers: "CP.CadastralParcel",
+    format: "image/png",
+    transparent: true,
+    version: "1.3.0",
+    crs: L.CRS.EPSG3857,
+    minZoom: 15,
+    maxZoom: 22,
+    pane: "catastoPane",   // 👈 FONDAMENTALE
+    attribution: "© Agenzia delle Entrate - Catasto"
+  }
+);
+
 L.control.layers(
-  { "OSM": baseOSM, "ESRI Satellite": baseEsri, "Carto Light": baseCarto },
-  null,
+  {
+    "OSM": baseOSM,
+    "ESRI Satellite": baseEsri,
+    "Google Satellite": googleSatellite,
+    "Google Ibrido": googleHybrid,
+    "Carto Light": baseCarto
+  },
+  {
+    "Catasto (Particelle)": catasto
+  },
   { position: "bottomleft", collapsed: true }
 ).addTo(map);
-
 
     const drawn = new L.FeatureGroup().addTo(map);
     const overlay = new L.FeatureGroup().addTo(map);
@@ -281,7 +355,16 @@ async function previewSample() {
     renderJSON(j);
 
     if (j.fc && j.fc.features.length) {
-      const gj = L.geoJSON(j.fc, { style: () => ({ weight: 1, fillOpacity: 0.2 }) });
+      const gj = L.geoJSON(j.fc, {
+  style: () => ({ weight: 1, fillOpacity: 0.2 }),
+  onEachFeature: (feature, layer) => {
+    let html = "<b>Attributi</b><br>";
+    for (const k in feature.properties) {
+      html += `<b>${k}</b>: ${feature.properties[k]}<br>`;
+    }
+    layer.bindPopup(html);
+  }
+});
       overlay.addLayer(gj);
       map.fitBounds(gj.getBounds(), { padding: [20,20] });
       setMsg("ok", `Sample: ${j.count}`);
@@ -314,9 +397,18 @@ async function loadAllInView() {
 
       if (!j.fc || !j.fc.features.length) break;
 
-      overlay.addLayer(
-        L.geoJSON(j.fc, { style: () => ({ weight: 1, fillOpacity: 0.15 }) })
-      );
+overlay.addLayer(
+  L.geoJSON(j.fc, {
+    style: () => ({ weight: 1, fillOpacity: 0.15 }),
+    onEachFeature: (feature, layer) => {
+      let html = "<b>Attributi</b><br>";
+      for (const k in feature.properties) {
+        html += `<b>${k}</b>: ${feature.properties[k]}<br>`;
+      }
+      layer.bindPopup(html);
+    }
+  })
+);
 
       total += j.fc.features.length;
       offset += j.fc.features.length;
@@ -352,7 +444,18 @@ async function loadAllInView() {
         renderJSON(j);
 
         if (j.features?.type === "FeatureCollection" && (j.features.features || []).length) {
-          overlay.addLayer(L.geoJSON(j.features, { style: () => ({ weight: 2, fillOpacity: 0.15 }) }));
+          overlay.addLayer(
+  L.geoJSON(j.features, {
+    style: () => ({ weight: 2, fillOpacity: 0.15 }),
+    onEachFeature: (feature, layer) => {
+      let html = "<b>Intersezione</b><br>";
+      for (const k in feature.properties) {
+        html += `<b>${k}</b>: ${feature.properties[k]}<br>`;
+      }
+      layer.bindPopup(html);
+    }
+  })
+);
         }
         setMsg("ok", `OK: hits ${(j.hits||[]).length}, overlay ${(j.features?.features||[]).length}`);
       } catch(e) {
@@ -375,11 +478,18 @@ async function showIntersections() {
     renderJSON(j);
 
     if (j.fc && j.fc.features && j.fc.features.length) {
-      overlay.addLayer(
-        L.geoJSON(j.fc, {
-          style: () => ({ weight: 2, color: "#0066cc", fillOpacity: 0.2 })
-        })
-      );
+overlay.addLayer(
+  L.geoJSON(j.fc, {
+    style: () => ({ weight: 2, color: "#0066cc", fillOpacity: 0.2 }),
+    onEachFeature: (feature, layer) => {
+      let html = "<b>Intersezione</b><br>";
+      for (const k in feature.properties) {
+        html += `<b>${k}</b>: ${feature.properties[k]}<br>`;
+      }
+      layer.bindPopup(html);
+    }
+  })
+);
       setMsg("ok", `Intersezioni: ${j.count}`);
     } else {
       setMsg("ok", "Nessuna geometria intersecata");
@@ -513,20 +623,36 @@ const SearchControl = L.Control.extend({
 
       // coordinate
       const m = q.match(/(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)/);
-      if (m) {
-        const lat = parseFloat(m[1]);
-        const lon = parseFloat(m[3]);
-        map.setView([lat, lon], 15);
-        return;
-      }
+if (m) {
+  const lat = parseFloat(m[1]);
+  const lon = parseFloat(m[3]);
+
+  if (searchMarker) map.removeLayer(searchMarker);
+
+  searchMarker = L.marker([lat, lon]).addTo(map)
+    .bindPopup(`Coordinate: ${lat}, ${lon}`)
+    .openPopup();
+
+  map.setView([lat, lon], 16);
+  return;
+}
 
       // indirizzo
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=it&limit=1`;
       const r = await fetch(url);
       const res = await r.json();
-      if (res?.length) {
-        map.setView([+res[0].lat, +res[0].lon], 16);
-      }
+if (res?.length) {
+  const lat = +res[0].lat;
+  const lon = +res[0].lon;
+
+  if (searchMarker) map.removeLayer(searchMarker);
+
+  searchMarker = L.marker([lat, lon]).addTo(map)
+    .bindPopup(res[0].display_name || "Risultato")
+    .openPopup();
+
+  map.setView([lat, lon], 16);
+}
     });
 
     return div;
@@ -534,6 +660,12 @@ const SearchControl = L.Control.extend({
 });
 map.addControl(new SearchControl());
 
+document.getElementById("catastoOpacity").addEventListener("input", (e) => {
+  catasto.setOpacity(parseFloat(e.target.value));
+});
+catasto.on("add", () => {
+  map.getPane("catastoPane").style.zIndex = 450;
+});
 
 
     refreshTables();
